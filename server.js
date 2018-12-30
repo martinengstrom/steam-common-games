@@ -195,11 +195,17 @@ function getOwnedGames(apiKey, steamUserId, callback) {
 // Accepts array of gameIds
 function resolveGameInfos(games, callback) {
 	var promiseThrottle = new PromiseThrottle({
-		requestsPerSecond: 0.1,
+		requestsPerSecond: 0.65, // 200 every 5 minutes
 		promiseImplementation: Promise
 	});
 
-	var promiseWrapper = function(id) { return getGameInfoApi(id); };
+	var promiseWrapper = function(id) { return getGameInfoApi(id).then((game) => 
+		{
+			db.games.insert(game, (err, doc) => {
+				return game;
+			});
+		});
+	};
 
 	var cachedEntities = [];
 	var promisedEntities = [];
@@ -211,10 +217,8 @@ function resolveGameInfos(games, callback) {
 				reject(err);
 
 			if (docs.length > 0) {
-				console.log("Found cached game");
 				cachedEntities.push(docs[0]);
 			} else {
-				console.log("Fetching game from steam");
 				promisedEntities.push(promiseThrottle.add(promiseWrapper.bind(this, id)));
 			}
 			resolve();
@@ -224,20 +228,8 @@ function resolveGameInfos(games, callback) {
 
 	Promise.all(dbLookups).then(function() {
 		if (promisedEntities.length > 0) {
-			Promise.all(promisedEntities).then(function(result) {
-				console.log("api requests done");
-				var dbInserts = result.map(game => new Promise(function(resolve, reject) {
-					db.games.insert(game, function(err, doc) {
-						if (err)
-							reject(err);
-						else
-							resolve(doc);
-					});
-				}));
-				Promise.all(dbInserts).then(function() {callback(cachedEntities.concat(result))});
-			});
+			Promise.all(promisedEntities).then((result) => callback(cachedEntities.concat(result)));
 		} else {
-			console.log("Cached games only returned");
 			callback(cachedEntities);
 		}
 	});
@@ -250,6 +242,7 @@ function getGameInfoApi(appId, callback) {
 			if (error)
 				reject(error);
 
+			console.log(body);
 			var data = JSON.parse(body)[appId].data;
 			var multiplayer = data.categories.find(c => c.id == 1);
 			var coop = data.categories.find(c => c.id == 9);
@@ -273,8 +266,6 @@ function getCommonGames(games, callback) {
 	// Find all appIds that has occured as many times as there are clients
 	// Resolve its appId to a game name
 	resolveGameInfos(Object.keys(count).filter(id => count[id] == games.length), function(commonGames) {
-		console.log("Common games:");
-		console.log(commonGames);
 		callback(commonGames);
 	});
 }

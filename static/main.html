@@ -22,7 +22,7 @@
 
 			socket.on('games', function(games) {
 				$('#games ul').empty();
-				games.forEach((game) => {
+				games.filter((game) => game.multiplayer || game.coop).forEach((game) => {
 					$('#games ul').append($('<li>').text(game.name));
 				});
 			});
