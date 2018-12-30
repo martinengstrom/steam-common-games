@@ -11,6 +11,7 @@ var auth = require('./auth.js');
 var creds = require('./credentials.js');
 
 var steamApiKey = creds.steamApiKey; 
+var sessionSecret = creds.sessionSecret;
 
 Array.prototype.flatMap = function(lambda) {
 	return Array.prototype.concat.apply([], this.map(lambda));
@@ -48,8 +49,7 @@ passport.use(new SteamStrategy({
 	returnURL: 'https://games.sigkill.me/auth/steam/return',
 	realm: 'https://games.sigkill.me/',
 	apiKey: steamApiKey
-},
-function(identifier, profile, done) {
+}, function(identifier, profile, done) {
 	db.users.find({openId: identifier}, function(err, docs) {
 		if (err)
 			return done(err);
@@ -74,7 +74,7 @@ function(identifier, profile, done) {
 }));
 
 var sessionMiddleware = session({
-	secret: 'herpderp',
+	secret: sessionSecret,
 	resave: true,
 	saveUninitialized: true
 });
@@ -147,12 +147,7 @@ function assignUserToLobby(lobbyId, user) {
 function removeUserFromLobby(lobbyId, user) {
 	if (lobbyId in lobbies) {
 		var lobby = lobbies[lobbyId];
-		var foundUsers = lobby.users.filter(function(user) {
-			return user.openId == user.openId;
-		});
-		if (foundUsers.length == 1) {
-			lobby.users = lobby.users.filter(user => user !== foundUsers[0]);
-		}
+		lobby.users = lobby.users.filter(u => u.openId !== user.openId);
 	}
 }
 
@@ -381,7 +376,7 @@ io.on('connection', function(socket) {
 	console.log("Sending updates due to new connection");
 	broadcastUpdates(socket, lobbyId);
 	socket.on('disconnect', function() {
-		removeUserFromLobby(lobbyId, socket.request.user);
+		removeUserFromLobby(lobbyId, socket.request.session.user);
 		console.log("Sending updates due to disconnect");
 		broadcastUpdates(socket, lobbyId);
 	});
