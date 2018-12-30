@@ -242,7 +242,6 @@ function resolveGameInfos(games, callback) {
 					});
 				}));
 				Promise.all(dbInserts).then(function() {callback(cachedEntities.concat(result))});
-			//return cachedEntities.concat(result);
 			});
 		} else {
 			console.log("Cached games only returned");
@@ -311,7 +310,7 @@ function getGameInfoApi(appId, callback) {
 	});
 }
 
-function getCommonGames(games) {
+function getCommonGames(games, callback) {
 	// Count occurences per appId count[appId] = count
 	var allGames = games.flatMap(p => p.flatMap(c => c.appid));
 	var count = {};
@@ -333,6 +332,7 @@ function getCommonGames(games) {
 	resolveGameInfos(Object.keys(count).filter(id => count[id] == games.length).slice(0, 3), function(commonGames) {
 		console.log("Common games:");
 		console.log(commonGames);
+		callback(commonGames);
 	});
 	
 	//	.map(async id => getGameInfo(id));
@@ -394,7 +394,7 @@ function broadcastCommonGames(socket, lobbyId) {
 		// Only emit games if there are more than 1 users
 		//if (lobby.users.length > 1) {
 			var allGamesArray = lobby.users.map(user => user.games);
-			io.to(lobbyId).emit('games', getCommonGames(allGamesArray));
+			getCommonGames(allGamesArray, (games) => io.to(lobbyId).emit('games', games));
 		//}
 	} else {
 		console.log("FATAL ERROR. No lobby found when attempting to broadcast games");

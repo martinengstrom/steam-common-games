@@ -15,8 +15,6 @@
 			var socket = io();
 			socket.on('users', function(nicks) {
 				$('#users ul').empty();
-				//for (i = 0; i < nicks.length; i++)
-				//	$('#users ul').append($('<li>').text(nicks[i]));
 				nicks.forEach(function(nick) {
 					$('#users ul').append($('<li>').text(nick));
 				});
@@ -24,8 +22,9 @@
 
 			socket.on('games', function(games) {
 				$('#games ul').empty();
-				for (i = 0; i < games.length; i++)
-					$('#games ul').append($('<li>').text(games[i]));
+				games.forEach((game) => {
+					$('#games ul').append($('<li>').text(game.name));
+				});
 			});
 		</script>
 	</head>
