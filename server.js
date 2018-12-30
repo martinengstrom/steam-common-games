@@ -106,12 +106,10 @@ app.get('/auth/steam/return', passport.authenticate('steam', {
 	}),
 	function(req, res) {
 		updateGames(req, function(err) {
-			console.log("Update games redirect:");
 			console.log(req.session.redirectTo);
 			var redirectTo = req.session.redirectTo || '/';
 			delete req.session.redirectTo;
 			req.session.user = req.user;
-			console.log("redirecting to origin page after login");
 			res.redirect(redirectTo);
 		});
 	}
@@ -245,45 +243,6 @@ function resolveGameInfos(games, callback) {
 	});
 }
 
-function getGameInfo(appId) {
-	return new Promise(function(resolve, reject) {
-		db.games.find({appId: appId}, function(err, docs) {
-			if (err)
-				reject(err);
-
-			if (docs.length == 0)
-				getGameInfoApi(appId, function(result) {
-					if (result == null) {
-						reject(result);
-					} else {
-						console.log("Inserting new game with appid " + appId);
-						db.games.insert(result, function(err, doc) {
-							if (!err)
-								resolve(doc);
-							else
-								reject(err);
-						});
-					}
-				});
-				/*
-				Promise.all(getGameInfoApi(appId)).then(function(result) {
-					db.insert(result, function(err, doc) {
-						if (err)
-							reject(err);
-						else
-							resolve(result);
-					});				
-				}).catch(function(err) {
-					console.log("Error fetching with:");
-					console.log(err);
-				});
-				*/
-			else
-				resolve(docs[0]);
-		});
-	});
-}
-
 function getGameInfoApi(appId, callback) {
 	steamurl = 'https://store.steampowered.com/api/appdetails/?appids=' + appId;
 	return new Promise(function(resolve, reject) {
@@ -311,37 +270,13 @@ function getCommonGames(games, callback) {
 	var count = {};
 	allGames.forEach(function (i) { count[i] = (count[i]||0) + 1;});
 
-	/*
-	var pto = new PromiseThrottle({
-		requestsPerSecond: 0.1,
-		promiseImplementation: Promise
-	});
-	*/
-
-	//var promiseWrapper = function(id) { return getGameInfo(id); };
-
 	// Find all appIds that has occured as many times as there are clients
 	// Resolve its appId to a game name
-	//var commonGames = resolveGameInfos(Object.keys(count).filter(id => count[id] == games.length));
-	console.log("Getting common games..");
-	resolveGameInfos(Object.keys(count).filter(id => count[id] == games.length).slice(0, 3), function(commonGames) {
+	resolveGameInfos(Object.keys(count).filter(id => count[id] == games.length), function(commonGames) {
 		console.log("Common games:");
 		console.log(commonGames);
 		callback(commonGames);
 	});
-	
-	//	.map(async id => getGameInfo(id));
-	//	.map(async id => pto.add(promiseWrapper.bind(this, id)));
-	//	.map(id => games.flatMap(p => p.find(c => c.appid == id).name)[0]);
-
-	/*
-	Promise.all(commonGames).then(function(result) {
-		return result;
-	});
-	*/
-	//Promise.all(commonGames).then(function(result){return result});
-	//Promise.all(commonGames.map(task => promiseThrottle.add(task))).then(function(result){return result});
-	//return commonGames;
 }
 
 function getLobbyUserNicknames(lobbyId) {
