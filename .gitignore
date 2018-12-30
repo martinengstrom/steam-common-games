@@ -1,0 +1,6 @@
+node_modules/
+package-lock.json
+docker-compose.yml
+credentials.js
+users.db
+games.db
