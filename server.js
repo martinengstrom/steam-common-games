@@ -92,6 +92,8 @@ app.get('/stats', function(req, res) {
 	res.end();
 });
 
+app.get('/favicon.ico', (req, res) => res.sendStatus(204));
+
 app.get('/login', function(req, res) {
 	res.sendFile(__dirname + '/static/login.html');
 });
@@ -107,7 +109,6 @@ app.get('/auth/steam/return', passport.authenticate('steam', {
 	}),
 	function(req, res) {
 		updateGames(req, function(err) {
-			console.log(req.session.redirectTo);
 			var redirectTo = req.session.redirectTo || '/';
 			delete req.session.redirectTo;
 			req.session.user = req.user;
