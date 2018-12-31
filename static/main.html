@@ -23,6 +23,8 @@
 
 			socket.on('games', function(games) {
 				$('#games').empty();
+				var gamesFiltered = games.filter(game => !game.multiplayer && !game.coop).length;
+				$('#users #user-label').text('Users in lobby (' + games.length + ' games in common / ' + gamesFiltered + ' filtered)');
 				games.filter((game) => game.multiplayer || game.coop).forEach((game) => {
 					var html = '<div class="col-md-4">' +
 					'<div class="card mb-4 box-shadow">' +
@@ -43,7 +45,7 @@
 		</header>
 		<main role="main">
 		<div id="users">
-			<p>Users in lobby</p>
+			<p id="user-label">Users in lobby</p>
 			<ul></ul>
 		</div>
 		<div class="album py-5 bg-light">
