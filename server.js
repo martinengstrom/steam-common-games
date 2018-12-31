@@ -9,6 +9,7 @@ var request = require('request');
 var PromiseThrottle = require('promise-throttle');
 var auth = require('./auth.js');
 var creds = require('./credentials.js');
+var steamDbScraper = require('./steamdb-scraper.js');
 
 var steamApiKey = creds.steamApiKey; 
 var sessionSecret = creds.sessionSecret;
@@ -265,7 +266,18 @@ function getCommonGames(games, callback) {
 
 	// Find all appIds that has occured as many times as there are clients
 	// Resolve its appId to a game name
-	resolveGameInfos(Object.keys(count).filter(id => count[id] == games.length), function(commonGames) {
+	var filteredGames = Object.keys(count)
+		.filter(id => count[id] == games.length)
+		.map(id => games.flatMap(p => p.flatMap(c => c)).find(game => game.appid == id));
+
+	var gameTags = filteredGames.map(game => steamDbScraper.getAppInfo(game.appid));
+	filteredGames = filteredGames.reduce((map, obj) => { map[obj.appid] = obj; return map; }, {});
+	Promise.all(gameTags).then(tags => {
+		var commonGames = tags.map(tag => {
+			tag.name = filteredGames[tag.appId].name;
+			tag.image = 'https://steamcdn-a.akamaihd.net/steam/apps/'+tag.appId+'/header.jpg';
+			return tag;
+		});
 		callback(commonGames);
 	});
 }
