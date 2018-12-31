@@ -259,6 +259,27 @@ function getGameInfoApi(appId, callback) {
 	});
 }
 
+function getGameInfo(game) {
+	return new Promise((resolve, reject) => {
+		db.games.find({appId: game.appid}, (err, docs) => {
+			if (err) reject(err);
+			if (docs.length > 0) {
+				resolve(docs[0]);
+			} else {
+				steamDbScraper.getAppInfo(game.appid).then(gameTags => {
+					gameTags.name = game.name;
+					gameTags.image = 'https://steamcdn-a.akamaihd.net/steam/apps/'+gameTags.appId+'/header.jpg';
+					
+					db.games.insert(gameTags, (err, doc) => {
+						if (err) reject(err);
+						resolve(gameTags);
+					});
+				});
+			}
+		});	
+	});
+}
+
 function getCommonGames(games, callback) {
 	// Count occurences per appId count[appId] = count
 	var allGames = games.flatMap(p => p.flatMap(c => c.appid));
@@ -271,6 +292,7 @@ function getCommonGames(games, callback) {
 		.filter(id => count[id] == games.length)
 		.map(id => games.flatMap(p => p.flatMap(c => c)).find(game => game.appid == id));
 
+	/*
 	var gameTags = filteredGames.map(game => steamDbScraper.getAppInfo(game.appid));
 	filteredGames = filteredGames.reduce((map, obj) => { map[obj.appid] = obj; return map; }, {});
 	Promise.all(gameTags).then(tags => {
@@ -280,6 +302,11 @@ function getCommonGames(games, callback) {
 			return tag;
 		});
 		callback(commonGames);
+	});
+	*/
+	var derp = filteredGames.map(game => getGameInfo(game));
+	Promise.all(derp).then(games => {
+		callback(games);
 	});
 }
 
