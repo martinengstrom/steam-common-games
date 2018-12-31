@@ -22,10 +22,8 @@
 			});
 
 			socket.on('games', function(games) {
-				$('#games ul').empty();
+				$('#games').empty();
 				games.filter((game) => game.multiplayer || game.coop).forEach((game) => {
-					//$('#games ul').append($('<li>').text(game.name));
-					console.log(game.image);
 					var html = '<div class="col-md-4">' +
 					'<div class="card mb-4 box-shadow">' +
 					'<img class="card-img-top" src="'+game.image+'" alt="Card image cap">' +
