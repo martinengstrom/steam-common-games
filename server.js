@@ -137,11 +137,7 @@ app.get('/:lobbyId', auth.restrict, function(req, res) {
 });
 
 function assignUserToLobby(lobbyId, user) {
-	if (lobbyId in lobbies) {
-		lobbies[lobbyId].users.push(user);
-	} else {
-		console.log("FATAL ERROR. Lobby not found when attempting to add user to lobby");
-	}
+	addUserToLobbyIfNeeded(lobbyId, user);
 }
 
 function removeUserFromLobby(lobbyId, user) {
