@@ -119,12 +119,20 @@ app.get('/auth/steam/return', passport.authenticate('steam', {
 
 app.get('/', auth.restrict, function(req, res) {
 	// Since we are here, there was no lobby id provided. Create a new lobby
-	var crypto = require('crypto');
-	var id = crypto.randomBytes(16).toString("hex");
+	var id = generateId();
+	while (getLobbyUserNicknames(id).length > 0) {
+		id = generateId();
+	}
+
 	var lobby = new Lobby(id);
 	lobbies[id] = lobby;
 	res.redirect('/' + id);
 });
+
+function generateId() {
+	var crypto = require('crypto');
+        return crypto.randomBytes(16).toString("hex");
+}
 
 app.get('/:lobbyId', auth.restrict, function(req, res) {
 	if (req.params.lobbyId in lobbies) {
