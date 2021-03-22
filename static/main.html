@@ -8,35 +8,58 @@
 		<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/js/bootstrap.min.js" integrity="sha384-B0UglyR+jN6CkvvICOB2joaf5I4l3gm9GU6Hc1og6Ls7i6U/mkkaduKaBhlAXv9k" crossorigin="anonymous"></script>
 		<script src="/socket.io/socket.io.js"></script>
 		<script>
-			/*
-			var socket = io({
-				transports: ['websockets']
-			});
-			*/
 			var socket = io();
+			var multiplayerFilter = true;
+			var coopFilter = false;
+			var storedGames = [];
+
+			function renderGames(games) {
+				$('#games').empty();
+				var filteredGames = games.filter(game => (game.multiplayer || !multiplayerFilter) && (game.coop || !coopFilter));
+				$('#users #user-label').text('Users in lobby (' + games.length + ' games in common / ' + (games.length - filteredGames.length) + ' filtered)');
+				filteredGames.forEach((game) => {
+                                        var html = '<div class="col-md-4">' +
+                                        '<div class="card mb-4 box-shadow">' +
+                                        '<img class="card-img-top" src="'+game.image+'" alt="Card image cap">' +
+                                        '<div class="card-body">' +
+                                        '<p class="card-text">'+game.name+'</p>' +
+                                        '</div>' +
+                                        '</div>' +
+                                        '</div>';
+                                        $('#games').append(html);
+                                });
+			}
+
 			socket.on('users', function(nicks) {
 				$('#users ul').empty();
+				var counter = 0;
 				nicks.forEach(function(nick) {
-					$('#users ul').append($('<li>').text(nick));
+					counter++;
+					$('#users ul').append('<li class="list-group-item"><span class="badge badge-primary badge-pill">' + counter + '</span> ' + nick + '</li>');
 				});
 			});
 
 			socket.on('games', function(games) {
-				$('#games').empty();
-				var gamesFiltered = games.filter(game => !game.multiplayer && !game.coop).length;
-				$('#users #user-label').text('Users in lobby (' + games.length + ' games in common / ' + gamesFiltered + ' filtered)');
-				games.filter((game) => game.multiplayer || game.coop).forEach((game) => {
-					var html = '<div class="col-md-4">' +
-					'<div class="card mb-4 box-shadow">' +
-					'<img class="card-img-top" src="'+game.image+'" alt="Card image cap">' +
-					'<div class="card-body">' +
-					'<p class="card-text">'+game.name+'</p>' +
-					'</div>' +
-					'</div>' +
-					'</div>';
-					$('#games').append(html);
-				});
+				storedGames = games;
+				renderGames(games);
 			});
+
+			function checkCheckbox(id, value) {
+				$(id).prop('checked', value);
+
+			}
+
+			// Set initial state
+			$(document).ready(() => {
+				checkCheckbox('#multiplayerFilter', multiplayerFilter);
+				checkCheckbox('#coopFilter', coopFilter);
+			});
+
+			function filterChanged() {
+				multiplayerFilter = $('#multiplayerFilter').prop('checked');
+				coopFilter = $('#coopFilter').prop('checked');
+				renderGames(storedGames);
+			}
 		</script>
 	</head>
 
@@ -45,8 +68,35 @@
 		</header>
 		<main role="main">
 		<div id="users">
-			<p id="user-label">Users in lobby</p>
-			<ul></ul>
+			<div class="alert alert-secondary container" role="alert">
+				<div class="row"><div class="col-md-auto">
+			<div class="dropdown">
+				<button class="btn btn-secondary btn-sm dropdown-toggle" type="button" id="filterDropdownButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+					Filters
+				</button>
+				<div class="dropdown-menu" aria-labelledby="filterDropdownButton">
+					<form class="px-4 py-3">
+					<div class="form-check">
+					<input type="checkbox" class="form-check-input" id="multiplayerFilter" onchange="filterChanged()">
+					<label class="form-check-label" for="multiplayerFilter">
+						Multiplayer
+					</label>
+					</div>
+					<div class="form-check">
+						<input type="checkbox" class="form-check-input" id="coopFilter" onchange="filterChanged()">
+						<label class="form-check-label" for="coopFilter">
+							Co-op
+						</label>
+					</div>
+					</form>
+				</div>
+			</div>
+					</div><div class="col-md-auto">
+			<p class="text-center" id="user-label">Users in lobby</p>
+					</div></div></div>
+			<div class="container">
+				<ul class="list-group list-group-flush" id="users-list"></ul>
+			</div>
 		</div>
 		<div class="album py-5 bg-light">
 			<div class="container">
